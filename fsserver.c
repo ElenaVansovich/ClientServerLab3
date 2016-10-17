@@ -1,14 +1,24 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
+#include <unistd.h>
 
 #define BUF_SIZE 2048
 
-void cmd(int sock)
+typedef struct structSocket
 {
+	int socket;
+}struck_sock;
+
+void cmd(int *structSock)
+{
+	struck_sock* st = (struck_sock*) structSock;
+	int sock = st->socket;
 	char buf[BUF_SIZE], buf1[BUF_SIZE];
 	int bytes;
 
@@ -35,8 +45,7 @@ void cmd(int sock)
 
 	printf("\nSend result.\n\n");
 	send(sock, buf1, bytes, 0);
-
-	close(socket);
+	close(sock);
 }
 
 int main()
@@ -87,7 +96,9 @@ int main()
 		#else
 			pthread_t thread1;
 			int result = 0;
-			result = pthread_create(&thread1, NULL, cmd, sock);
+			struck_sock st;
+			st.socket = sock;
+			result = pthread_create(&thread1, NULL, (void *)cmd, &st);
 			if (result != 0)
 			{
 				perror("pthread_create error");
