@@ -1,46 +1,99 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <errno.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <netinet/in.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-#define SOCK_NAME "socket.soc"
-#define BUF_SIZE 256
+#define BUF_SIZE 2048
 
-int main(int argc, char** argv)
+void cmd(int sock)
 {
-	struct sockaddr srvr_name, rcvr_name;
-	char buf[BUF_SIZE];
-	int sock;
-	int namelen, bytes;
+	char buf[BUF_SIZE], buf1[BUF_SIZE];
+	int bytes;
+
+	FILE * f;
+
+	bytes = recv(sock, buf, BUF_SIZE, 0);
+	if(bytes <= 0)
+	{
+		perror("recv error\n");
+		return;
+	}
+
+	printf("\nReceive command: %s", buf);
+
+	f = popen(buf, "r");
+	if (f == NULL)
+	{
+		perror("popen error\n");
+		return;
+	}
+
+	fread(buf1, 1, BUF_SIZE, f);
+	pclose(f);
+
+	printf("\nSend result.\n\n");
+	send(sock, buf1, bytes, 0);
+
+	close(socket);
+}
+
+int main()
+{
+	int sock, listener;
+	struct sockaddr_in sock_addr; 
 	
-	sock = socket(AF_UNIX, SOCK_DGRAM, 0);
-	if(sock < 0)
+	listener = socket(AF_INET, SOCK_STREAM, 0);
+	if(listener < 0)
 	{
-		perror("socked failed");
-		return EXIT_FAILURE;
+		perror("socket error");
+		return 1;
 	}
 
-	srvr_name.sa_family = AF_UNIX;
-	strcpy(srvr_name.sa_data, SOCK_NAME);
-	if(bind(sock, &srvr_name, strlen(srvr_name.sa_data)+sizeof(srvr_name.sa_family)) < 0)
+	sock_addr.sin_family = AF_INET;
+	sock_addr.sin_port = htons(3426);
+	sock_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+
+	if(bind(listener, (struct sockaddr *)&sock_addr, sizeof(sock_addr)) < 0)
 	{
-		perror("bind failed");
-		return EXIT_FAILURE;
+		perror("bind error");
+		return 1;
 	}
 
-	bytes = recvfrom(sock, buf, sizeof(buf), 0, &rcvr_name, &namelen);
-	if(bytes < 0)
+	listen(listener, 1);
+	while(1)
 	{
-		perror("recvfrom failed");
-		return EXIT_FAILURE;
-	}
+		sock = accept(listener, NULL, NULL);
 
-	buf[bytes] = 0;
-	rcvr_name.sa_data[namelen] = 0;
-	//FILE* f = popen ()
-	printf("Client sent: %s\n", buf);
-	close(sock);
-	unlink(SOCK_NAME);
+		if(sock < 0)
+		{
+			perror("accept error");
+			return 1;
+		}
+		#ifdef PROCESS
+			pid_t id = 0;
+			id = fork();
+			if (id == 0)
+			{
+				cmd(sock);
+				return 0;
+			}
+			else
+			{
+				perror("fork error");
+				return 1;
+			}
+		#else
+			pthread_t thread1;
+			int result = 0;
+			result = pthread_create(&thread1, NULL, cmd, sock);
+			if (result != 0)
+			{
+				perror("pthread_create error");
+				return 1;
+			}
+		#endif
+	}
+	return 0;
 }
