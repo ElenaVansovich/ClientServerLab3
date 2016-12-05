@@ -42,8 +42,8 @@ int main (int argc, char* argv[]) {
 	}
 	
 
-	printf("Input text:");
-	fgets(cmd, 2048, stdin);
+	printf("Input command:");
+	fgets(cmd, 20, stdin);
 	send(sock, cmd, BUF_SIZE, 0);
 
 	bytes = recv(sock, buf, BUF_SIZE, 0);

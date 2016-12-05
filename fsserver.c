@@ -10,9 +10,10 @@
 
 #define BUF_SIZE 2048
 
-void cmd(void* param) {
+void cmd(void* param)
+{
 	int sock = (intptr_t)param;
-	char buf[BUF_SIZE];
+	char buf[BUF_SIZE], buf1[BUF_SIZE];
 	int bytes;
 
 	FILE * f;
@@ -23,7 +24,7 @@ void cmd(void* param) {
 		return;
 	}
 
-	printf("\nReceive text: %s", buf);
+	printf("\nReceive command: %s", buf);
 
 	f = popen(buf, "r");
 	if (f == NULL) {
@@ -31,18 +32,18 @@ void cmd(void* param) {
 		return;
 	}
 	int len = -1;
-	while (len != 0) {
-		len = fread(buf, 1, BUF_SIZE, f);
+	while ((len = fread(buf1, 1, BUF_SIZE, f)) > 0) {
+		
 	}
 
-	
 	pclose(f);
 
 	printf("\nSend result.\n\n");
-	send(sock, buf, bytes, 0);
+	send(sock, buf1, bytes, 0);
 }
 
-int main() {
+int main()
+{
 	int sock, listener;
 	struct sockaddr_in sock_addr; 
 	
@@ -61,24 +62,24 @@ int main() {
 		exit(2);
 	}
 
-	listen(listener, 1);
+	listen(listener, 5);
 	while(1) {
 		sock = accept(listener, NULL, NULL);
 
-		if(sock < 0) {
+		if (sock < 0) {
 			perror("accept error");
 			return 1;
 		}
 		#ifdef PROCESS
 			pid_t id = 0;
 			id = fork();
-			if (id == 0) {
-				cmd((void *)(intptr_t)sock);
-				return 0;
-			}
-			else {
+			if (id == -1) {
 				perror("fork error");
 				exit(1);
+			}
+			else if (id == 0) {
+				cmd((void *)(intptr_t)sock);
+				return 0;
 			}
 		#else
 			pthread_t thread1;
