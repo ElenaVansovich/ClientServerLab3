@@ -1,25 +1,19 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <arpa/inet.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <pthread.h>
+#include <arpa/inet.h>
 #include <unistd.h>
+#include <pthread.h>
 
 #define BUF_SIZE 2048
 
-typedef struct structSocket
+void cmd(void* param)
 {
-	int socket;
-}struck_sock;
-
-void cmd(int *structSock)
-{
-	struck_sock* st = (struck_sock*) structSock;
-	int sock = st->socket;
-	char buf[BUF_SIZE], buf1[BUF_SIZE];
+	int sock = (intptr_t)param;
+	char buf[BUF_SIZE];
 	int bytes;
 
 	FILE * f;
@@ -39,13 +33,17 @@ void cmd(int *structSock)
 		perror("popen error\n");
 		return;
 	}
+	int len = -1;
+	while(len != 0)
+	{
+		len = fread(buf, 1, BUF_SIZE, f);
+	}
 
-	fread(buf1, 1, BUF_SIZE, f);
+	
 	pclose(f);
 
 	printf("\nSend result.\n\n");
-	send(sock, buf1, bytes, 0);
-	close(sock);
+	send(sock, buf, bytes, 0);
 }
 
 int main()
@@ -57,17 +55,17 @@ int main()
 	if(listener < 0)
 	{
 		perror("socket error");
-		return 1;
+		exit(1);
 	}
 
 	sock_addr.sin_family = AF_INET;
-	sock_addr.sin_port = htons(3426);
+	sock_addr.sin_port = htons(3425);
 	sock_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
 
 	if(bind(listener, (struct sockaddr *)&sock_addr, sizeof(sock_addr)) < 0)
 	{
 		perror("bind error");
-		return 1;
+		exit(2);
 	}
 
 	listen(listener, 1);
@@ -85,24 +83,20 @@ int main()
 			id = fork();
 			if (id == 0)
 			{
-				cmd(sock);
+				cmd((void *)(intptr_t)sock);
 				return 0;
 			}
 			else
 			{
 				perror("fork error");
-				return 1;
+				exit(1);
 			}
 		#else
 			pthread_t thread1;
-			int result = 0;
-			struck_sock st;
-			st.socket = sock;
-			result = pthread_create(&thread1, NULL, (void *)cmd, &st);
+			int result = pthread_create(&thread1, NULL, (void *)cmd, (void *)(intptr_t)sock);
 			if (result != 0)
 			{
 				perror("pthread_create error");
-				return 1;
 			}
 		#endif
 	}

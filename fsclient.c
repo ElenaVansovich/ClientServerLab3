@@ -3,6 +3,7 @@
 #include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <arpa/inet.h>
 
 #define BUF_SIZE 2048
  
@@ -23,7 +24,7 @@ int main ()
 
 	sock_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
     	sock_addr.sin_family = AF_INET;
-    	sock_addr.sin_port = htons(3426);
+    	sock_addr.sin_port = htons(3425);
     
 	connection = connect(sock, (struct sockaddr *)&sock_addr, sizeof(sock_addr));
 
@@ -32,9 +33,10 @@ int main ()
 		perror("connect error\n");
 		exit(2);
 	}
+	
 
-	strcpy(cmd, "echo Hello");
-	printf("Command: echo Hello\n");
+	printf("Input text:");
+	fgets(cmd, 2048, stdin);
 	send(sock, cmd, BUF_SIZE, 0);
 
 	bytes = recv(sock, buf, BUF_SIZE, 0);

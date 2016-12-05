@@ -1,8 +1,8 @@
 client:
 	gcc fsclient.c -o client
-server-thread:
+server_thread:
 	gcc -pthread fsserver.c -o server
-server-process:
+server_process:
 	gcc fsserver.c -DPROCESS -o server
 clean:
 	rm -f server client
