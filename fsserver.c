@@ -56,7 +56,7 @@ int main() {
 	sock_addr.sin_port = htons(3425);
 	sock_addr.sin_addr.s_addr = inet_addr("0.0.0.0");
 
-	if(bind(listener, (struct sockaddr *)&sock_addr, sizeof(sock_addr)) < 0) {
+	if (bind(listener, (struct sockaddr *)&sock_addr, sizeof(sock_addr)) < 0) {
 		perror("bind error");
 		exit(2);
 	}
